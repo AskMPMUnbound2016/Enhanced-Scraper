@@ -1,0 +1,192 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2821
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fswiss\fcharset0 Helvetica-Bold;\f2\fswiss\fcharset0 Helvetica-Oblique;
+}
+{\colortbl;\red255\green255\blue255;\red69\green73\blue76;\red236\green241\blue247;\red205\green26\blue29;
+\red24\green112\blue43;\red21\green21\blue22;\red228\green234\blue244;\red52\green55\blue54;}
+{\*\expandedcolortbl;;\cssrgb\c34118\c35686\c37255;\cssrgb\c94118\c95686\c97647;\cssrgb\c85098\c18824\c14510;
+\cssrgb\c9412\c50196\c21961;\cssrgb\c10588\c10980\c11373;\cssrgb\c91373\c93333\c96471;\cssrgb\c26667\c27843\c27451;}
+{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid1\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{decimal\}}{\leveltext\leveltemplateid2\'01\'01;}{\levelnumbers\'01;}\fi-360\li1440\lin1440 }{\listname ;}\listid1}
+{\list\listtemplateid2\listhybrid{\listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{decimal\}}{\leveltext\leveltemplateid101\'01\'00;}{\levelnumbers\'01;}\fi-360\li720\lin720 }{\listname ;}\listid2}
+{\list\listtemplateid3\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid201\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid3}}
+{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}{\listoverride\listid2\listoverridecount0\ls2}{\listoverride\listid3\listoverridecount0\ls3}}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\deftab720
+\pard\pardeftab720\partightenfactor0
+
+\f0\fs28 \cf2 \cb3 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 # Miller 3 Data Scraper - Enhanced Version\
+\
+## Overview\
+An advanced web scraper for Miller 3 Data with both semi-automated and fully automated modes, batch processing, and CSV merge capabilities.\
+\
+## Key Features\
+\pard\pardeftab720\partightenfactor0
+\cf4 \strokec4 *\cf2 \strokec2  
+\f1\b **Automation Modes**
+\f0\b0 : Choose between Semi-Automated (you navigate pages) and Fully Automated (script handles everything).\
+\cf4 \strokec4 *\cf2 \strokec2  
+\f1\b **Download Mode Options**
+\f0\b0 : Download all pages, continue from where you left off, process a specific page range, or just download the current page.\
+\cf4 \strokec4 *\cf2 \strokec2  
+\f1\b **Smart Record Selection**
+\f0\b0 : Automatically selects records in batches, respecting the website's limits.\
+\cf4 \strokec4 *\cf2 \strokec2  
+\f1\b **Automated Navigation (Full Mode)**
+\f0\b0 : Automatically clicks next/arrow buttons or uses the page number input to navigate. It falls back to manual prompts if needed.\
+\cf4 \strokec4 *\cf2 \strokec2  
+\f1\b **No File Naming Prompts**
+\f0\b0 : Downloads use default filenames from the website and are saved to a local \cf5 \strokec5 `Downloads`\cf2 \strokec2  folder.\
+\cf4 \strokec4 *\cf2 \strokec2  
+\f1\b **CSV Merge Option**
+\f0\b0 : An option to merge all downloaded CSV files into a single, timestamped file at the end of a session.\
+\cf4 \strokec4 *\cf2 \strokec2  
+\f1\b **Download Limit Management**
+\f0\b0 : Respects the 1000-page limit per search and stops automatically.\
+\
+---\
+\
+## IMPORTANT: ChromeDriver Security Warning\
+When you run the scraper for the first time, your operating system may block ChromeDriver because it is an application downloaded from the internet.\
+\
+\cf4 \strokec4 *\cf2 \strokec2  
+\f1\b **On macOS**
+\f0\b0 : You may see a warning that says 
+\f1\b **"ChromeDriver cannot be opened because the developer cannot be verified."**
+\f0\b0 \
+\cf4 \strokec4     *\cf2 \strokec2  
+\f1\b **Solution**
+\f0\b0 : Open \cf5 \strokec5 `System Settings`\cf2 \strokec2  > \cf5 \strokec5 `Privacy & Security`\cf2 \strokec2 . Scroll down and you will see a message about "ChromeDriver" being blocked. Click the 
+\f1\b **"Allow Anyway"**
+\f0\b0  button. You may need to run the launcher script one more time after allowing it.\
+\
+\cf4 \strokec4 *\cf2 \strokec2  
+\f1\b **On Windows**
+\f0\b0 : Windows Defender SmartScreen might show a blue screen that says 
+\f1\b **"Windows protected your PC"**
+\f0\b0 .\
+\cf4 \strokec4     *\cf2 \strokec2  
+\f1\b **Solution**
+\f0\b0 : Click on 
+\f1\b **"More info"**
+\f0\b0  and then click the 
+\f1\b **"Run anyway"**
+\f0\b0  button.\
+\
+---\
+\
+## How to Use\
+\
+### Step 1: Initial Setup\
+Ensure you have Python 3 and Google Chrome installed on your system. Then, install the required Python libraries by opening a terminal or command prompt and running:\
+\pard\pardeftab720\partightenfactor0
+\cf5 \strokec5 ```bash\
+pip install selenium pandas\
+\pard\pardeftab720\sa320\partightenfactor0
+
+\fs24 \cf6 \cb1 \strokec6 \
+\pard\pardeftab720\sa160\partightenfactor0
+
+\f1\b\fs28 \cf6 Step 2: Launch the Scraper\
+\pard\pardeftab720\sa160\partightenfactor0
+
+\f0\b0\fs24 \cf6 \
+\pard\tx220\tx720\pardeftab720\li720\fi-720\sa160\partightenfactor0
+\ls1\ilvl0
+\f1\b \cf6 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec6 On macOS / Linux
+\f0\b0 :\
+\pard\tx940\tx1440\pardeftab720\li1440\fi-1440\sa160\partightenfactor0
+\ls1\ilvl1\cf6 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	1	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec6 Open the 
+\f1\b Terminal
+\f0\b0  application.\
+\ls1\ilvl1\kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	2	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec6 Navigate to the project folder. Example: \cf2 \cb7 \strokec2 cd ~/Desktop/Miller-3-Data-Scraper\cf6 \cb1 \strokec6 \
+\ls1\ilvl1\kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	3	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec6 Run the launcher script with the command:\uc0\u8232 \cf2 \cb3 \strokec2 Bash\cb1 \uc0\u8232 
+\fs48 \cf8 \strokec8 \uc0\u8232 \u8232 \u8232 
+\fs24 \cf2 \strokec2 \uc0\u8232 
+\fs28 \cb3 python3 launcher.py\
+\pard\tx940\tx1440\pardeftab720\li1440\fi-1440\partightenfactor0
+\ls1\ilvl1\cf2 \cb1 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	4	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 \uc0\u8232 
+\fs24 \cf6 \strokec6 \uc0\u8232 \u8232 \cb3 \uc0\u8232 \cb1 \
+\pard\tx220\tx720\pardeftab720\li720\fi-720\sa160\partightenfactor0
+\ls1\ilvl0
+\f1\b \cf6 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec6 On Windows
+\f0\b0 :\
+\pard\tx940\tx1440\pardeftab720\li1440\fi-1440\sa160\partightenfactor0
+\ls1\ilvl1\cf6 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	1	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec6 Open 
+\f1\b Command Prompt
+\f0\b0  or 
+\f1\b PowerShell
+\f0\b0 .\
+\ls1\ilvl1\kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	2	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec6 Navigate to the project folder. Example: \cf2 \cb7 \strokec2 cd C:\\Users\\YourUser\\Desktop\\Miller-3-Data-Scraper\cf6 \cb1 \strokec6 \
+\ls1\ilvl1\kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	3	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec6 Run the launcher script with the command:\uc0\u8232 \cf2 \cb3 \strokec2 Bash\cb1 \uc0\u8232 
+\fs48 \cf8 \strokec8 \uc0\u8232 \u8232 \u8232 
+\fs24 \cf2 \strokec2 \uc0\u8232 
+\fs28 \cb3 python launcher.py\
+\pard\tx940\tx1440\pardeftab720\li1440\fi-1440\partightenfactor0
+\ls1\ilvl1\cf2 \cb1 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	4	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 \uc0\u8232 
+\fs24 \cf6 \strokec6 \uc0\u8232 \u8232 \cb3 \uc0\u8232 \cb1 \
+\pard\tx220\tx720\pardeftab720\li720\fi-720\sa160\partightenfactor0
+\ls1\ilvl0
+\f2\i \cf6 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec6 Alternatively, you can try double-clicking the \cf2 \cb7 \strokec2 launcher.py\cf6 \cb1 \strokec6  file.
+\f0\i0 \
+\pard\pardeftab720\sa320\partightenfactor0
+\cf6 \
+\pard\pardeftab720\sa160\partightenfactor0
+
+\f1\b\fs28 \cf6 Step 3: Follow the On-Screen Prompts\
+\pard\pardeftab720\sa160\partightenfactor0
+
+\f0\b0\fs24 \cf6 \
+\pard\tx220\tx720\pardeftab720\li720\fi-720\sa160\partightenfactor0
+\ls2\ilvl0\cf6 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	1	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec6 A Chrome browser window will open. 
+\f1\b Log in
+\f0\b0  to the website, perform your search, and navigate to the 
+\f1\b first page of results
+\f0\b0 .\
+\ls2\ilvl0\kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	2	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec6 Return to the terminal and 
+\f1\b press Enter
+\f0\b0 .\
+\ls2\ilvl0\kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	3	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec6 Choose your desired 
+\f1\b Automation Mode
+\f0\b0  and 
+\f1\b Download Mode
+\f0\b0  by entering the corresponding number.\
+\ls2\ilvl0\kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	4	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec6 Let the script run. It will either operate fully automatically or prompt you for manual navigation, depending on the mode you selected.\
+\pard\pardeftab720\partightenfactor0
+\cf6 \
+\pard\pardeftab720\sa320\partightenfactor0
+\cf6 \
+\pard\pardeftab720\sa160\partightenfactor0
+
+\f1\b\fs36 \cf6 Troubleshooting\
+\pard\pardeftab720\sa160\partightenfactor0
+
+\f0\b0\fs24 \cf6 \
+\pard\tx220\tx720\pardeftab720\li720\fi-720\sa160\partightenfactor0
+\ls3\ilvl0
+\f1\b \cf6 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec6 "Cannot find the next button"
+\f0\b0 : The script now uses multiple methods to find the next page (arrow buttons and page number inputs). If it still fails, the website's HTML may have changed. The script will fall back to manual navigation prompts.\
+\ls3\ilvl0
+\f1\b \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec6 Records Not Being Selected
+\f0\b0 : Ensure the page is fully loaded before you press Enter in the terminal. In "Fully Automated" mode, the script waits, but a slow connection could still cause issues.\
+\ls3\ilvl0
+\f1\b \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec6 "ChromeDriver version must match Chrome version"
+\f0\b0 : This error means your version of Google Chrome was updated and is no longer compatible with the installed ChromeDriver. You will need to download the matching version of ChromeDriver from the web.\
+}

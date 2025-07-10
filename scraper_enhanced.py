@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
 """
-Miller 3 Data Scraper - Enhanced Version with CSV Merge Options and Quick Mode
+Miller 3 Data Scraper - Enhanced Version with Pagination Calibration
 NEW FEATURES:
+- Pagination Calibration: One-time setup to identify Next button for fully automated mode
+- Calibration Persistence: Save successful calibrations for future sessions
+- Session Resume: Continue from where you left off
+- Enhanced Page Change Detection: Multiple verification methods
 - Quick Mode: Download exactly 10 pages at a time (RECOMMENDED for reliability)
-- Enhanced pagination fix for fully automated mode
 - Standalone option to merge existing CSV files before scraping
 - Enhanced merge option that includes ALL CSV files in downloads folder
-- Option to merge existing files + new downloads together
 """
 
 import time
 import os
 import glob
+import json
+import hashlib
 import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -33,9 +37,10 @@ class Miller3DataScraper:
         # Set up separate directories for downloads and screenshots
         self.download_dir = download_dir or os.path.join(script_dir, 'Downloads')
         self.screenshots_dir = os.path.join(script_dir, 'Screenshots')
+        self.config_dir = os.path.join(script_dir, 'Config')
 
         # Create directories if they don't exist
-        for directory in [self.download_dir, self.screenshots_dir]:
+        for directory in [self.download_dir, self.screenshots_dir, self.config_dir]:
             if not os.path.exists(directory):
                 os.makedirs(directory)
                 logger.info(f"Created directory: {directory}")
@@ -60,7 +65,10 @@ class Miller3DataScraper:
         self.end_page = None
         self.pages_downloaded = 0
         self._last_files = set()
-        self.single_batch_mode = False  # NEW: Flag for 10-page quick mode
+        self.single_batch_mode = False  # Flag for 10-page quick mode
+        self.next_button_selector = None  # Store calibrated selector
+        self.calibration_file = os.path.join(self.config_dir, 'calibrations.json')
+        self.progress_file = os.path.join(self.config_dir, '.scraper_progress.json')
 
     def setup_driver(self):
         """Setup Chrome driver with appropriate options"""
@@ -80,6 +88,188 @@ class Miller3DataScraper:
         self.driver = webdriver.Chrome(options=chrome_options)
         self.wait = WebDriverWait(self.driver, 20)
         logger.info("Chrome driver initialized successfully")
+
+    def save_calibration(self, url_pattern, selector):
+        """Save successful calibration for future use"""
+        try:
+            with open(self.calibration_file, 'r') as f:
+                calibrations = json.load(f)
+        except:
+            calibrations = {}
+        
+        calibrations[url_pattern] = {
+            'selector': selector,
+            'timestamp': time.time(),
+            'success_count': calibrations.get(url_pattern, {}).get('success_count', 0) + 1
+        }
+        
+        with open(self.calibration_file, 'w') as f:
+            json.dump(calibrations, f, indent=2)
+        
+        logger.info(f"Calibration saved for future sessions")
+
+    def load_calibration(self, url):
+        """Load previous calibration if available"""
+        try:
+            with open(self.calibration_file, 'r') as f:
+                calibrations = json.load(f)
+                
+            # Find matching calibration
+            for pattern, data in calibrations.items():
+                if pattern in url:
+                    logger.info(f"Found previous calibration: {data['selector']}")
+                    return data['selector']
+        except:
+            pass
+        
+        return None
+
+    def save_progress(self):
+        """Save current progress for resuming later"""
+        progress = {
+            'last_page': self.current_page,
+            'pages_downloaded': self.pages_downloaded,
+            'timestamp': time.time(),
+            'next_button_selector': self.next_button_selector,
+            'url': self.driver.current_url if self.driver else None
+        }
+        
+        with open(self.progress_file, 'w') as f:
+            json.dump(progress, f, indent=2)
+        
+        logger.info(f"Progress saved (page {self.current_page}, {self.pages_downloaded} pages downloaded)")
+
+    def check_for_resume(self):
+        """Check if there's a previous session to resume"""
+        if os.path.exists(self.progress_file):
+            try:
+                with open(self.progress_file, 'r') as f:
+                    progress = json.load(f)
+                    
+                elapsed = time.time() - progress['timestamp']
+                if elapsed < 86400:  # Less than 24 hours old
+                    logger.info(f"\nFound previous session:")
+                    logger.info(f"  Last page: {progress['last_page']}")
+                    logger.info(f"  Pages downloaded: {progress['pages_downloaded']}")
+                    
+                    resume = input("\nResume from previous session? (y/n): ").strip().lower()
+                    if resume == 'y':
+                        self.current_page = progress['last_page']
+                        self.pages_downloaded = progress['pages_downloaded']
+                        self.next_button_selector = progress.get('next_button_selector')
+                        return True
+            except Exception as e:
+                logger.warning(f"Could not load progress file: {e}")
+        
+        return False
+
+    def get_page_state(self):
+        """Capture current page state for comparison"""
+        state = {
+            'url': self.driver.current_url,
+            'page_num': self.get_current_page_number(),
+            'first_record': self.get_first_record_identifier()
+        }
+        
+        # Create content hash of visible text
+        try:
+            body_text = self.driver.find_element(By.TAG_NAME, 'body').text
+            state['content_hash'] = hashlib.md5(body_text.encode()).hexdigest()[:8]
+        except:
+            state['content_hash'] = None
+        
+        return state
+
+    def verify_page_changed(self, old_state):
+        """Enhanced verification that page actually changed"""
+        new_state = self.get_page_state()
+        
+        # Multiple verification methods
+        checks = {
+            'url_changed': old_state['url'] != new_state['url'],
+            'content_changed': old_state['content_hash'] != new_state['content_hash'],
+            'page_number_changed': old_state['page_num'] != new_state['page_num'],
+            'first_record_changed': old_state['first_record'] != new_state['first_record']
+        }
+        
+        # Log what changed
+        changes = [k for k, v in checks.items() if v]
+        if changes:
+            logger.info(f"Page change confirmed: {', '.join(changes)}")
+            return True
+        
+        logger.warning("Page does not appear to have changed")
+        return False
+
+    def get_next_button_candidates(self):
+        """Get all potential next button candidates with scoring"""
+        candidates = []
+        
+        # Extended selectors for finding Next buttons
+        selectors = [
+            "//a[contains(@href, '')]",
+            "//button",
+            "//input[@type='button' or @type='submit']",
+            "//span[@onclick or @click]",
+            "//div[@onclick or @click]",
+            "//li//a",
+            "//td//a"
+        ]
+        
+        # Additional specific patterns
+        if self.current_page:
+            selectors.append(f"//a[normalize-space(text()) = '{self.current_page + 1}']")
+        
+        element_info = []
+        for selector in selectors:
+            elements = self.driver.find_elements(By.XPATH, selector)
+            for elem in elements:
+                try:
+                    text = elem.text.strip()
+                    class_attr = elem.get_attribute('class') or ''
+                    id_attr = elem.get_attribute('id') or ''
+                    href = elem.get_attribute('href') or ''
+                    value = elem.get_attribute('value') or ''
+                    onclick = elem.get_attribute('onclick') or ''
+                    aria_label = elem.get_attribute('aria-label') or ''
+                    title = elem.get_attribute('title') or ''
+                    
+                    # Score the element
+                    score = 0
+                    elem_str = f"{text} {class_attr} {id_attr} {href} {value} {onclick} {aria_label} {title}".lower()
+                    
+                    # Scoring criteria
+                    if 'next' in elem_str: score += 10
+                    if any(arrow in text for arrow in ['»', '›', '→', '>', '⟩', '▶']): score += 8
+                    if elem.tag_name == 'a': score += 5
+                    if 'disabled' not in class_attr and not elem.get_attribute('disabled'): score += 3
+                    if elem.is_displayed(): score += 3
+                    if elem.is_enabled(): score += 2
+                    if 'page' in elem_str: score += 2
+                    if 'pagination' in elem_str: score += 2
+                    
+                    # Negative scoring for unlikely elements
+                    if 'prev' in elem_str: score -= 10
+                    if any(arrow in text for arrow in ['«', '‹', '←', '<', '⟨', '◀']): score -= 8
+                    
+                    if score > 0:
+                        element_info.append({
+                            'element': elem,
+                            'text': text or value,
+                            'class': class_attr,
+                            'id': id_attr,
+                            'tag': elem.tag_name,
+                            'href': href,
+                            'score': score
+                        })
+                except:
+                    continue
+        
+        # Sort by score
+        element_info.sort(key=lambda x: x['score'], reverse=True)
+        
+        # Return top candidates
+        return element_info[:15]
 
     def get_initial_options(self):
         """NEW: Get initial user options before starting scraper"""
@@ -216,6 +406,169 @@ class Miller3DataScraper:
                         logger.warning("Please enter a valid number.")
             else:
                 logger.warning("Invalid choice. Please enter 1, 2, or 3.")
+
+    def calibrate_next_button(self):
+        """Enhanced calibration to identify the Next button with persistence"""
+        logger.info("\n" + "="*80)
+        logger.info("PAGINATION CALIBRATION")
+        logger.info("="*80)
+        
+        # Check for existing calibration
+        current_url = self.driver.current_url
+        base_url = current_url.split('?')[0]  # Get base URL without parameters
+        existing_calibration = self.load_calibration(base_url)
+        
+        if existing_calibration:
+            logger.info(f"Found previous calibration for this site.")
+            use_existing = input("\nUse previous calibration? (y/n): ").strip().lower()
+            if use_existing == 'y':
+                self.next_button_selector = existing_calibration
+                # Test it
+                try:
+                    test_elem = self.driver.find_element(By.XPATH, self.next_button_selector)
+                    if test_elem.is_displayed() and test_elem.is_enabled():
+                        logger.info("✅ Previous calibration verified and working!")
+                        return True
+                except:
+                    logger.warning("Previous calibration no longer works. Let's recalibrate.")
+        
+        logger.info("Let's identify the 'Next' button for this website.")
+        logger.info("This only needs to be done once per session.")
+        logger.info("="*80)
+        
+        input("\nMake sure you're on a results page with a 'Next' button visible, then press Enter...")
+        
+        # Take screenshot for reference
+        screenshot_path = os.path.join(self.screenshots_dir, f"next_button_calibration_{int(time.time())}.png")
+        self.driver.save_screenshot(screenshot_path)
+        logger.info(f"Reference screenshot saved to: {screenshot_path}")
+        
+        logger.info("\nAnalyzing page for potential 'Next' buttons...")
+        
+        # Get candidates with scoring
+        element_info = self.get_next_button_candidates()
+        
+        if element_info:
+            logger.info(f"\nFound {len(element_info)} potential 'Next' buttons (sorted by likelihood):")
+            for i, info in enumerate(element_info, 1):
+                display_text = info['text'][:30] + '...' if len(info['text']) > 30 else info['text']
+                logger.info(f"{i}. {info['tag'].upper()}: '{display_text}' [score: {info['score']}, class='{info['class'][:50]}']")
+            
+            while True:
+                try:
+                    choice = input(f"\nWhich number is the Next button? (1-{len(element_info)}) or 's' to skip: ").strip()
+                    
+                    if choice.lower() == 's':
+                        break
+                        
+                    idx = int(choice) - 1
+                    if 0 <= idx < len(element_info):
+                        selected = element_info[idx]
+                        
+                        # Build a specific selector for this element
+                        if selected['id']:
+                            self.next_button_selector = f"//*[@id='{selected['id']}']"
+                        elif selected['class'] and selected['text']:
+                            # Use the first class if multiple classes
+                            first_class = selected['class'].split()[0]
+                            self.next_button_selector = f"//{selected['tag']}[contains(@class, '{first_class}') and contains(., '{selected['text']}')]"
+                        elif selected['text']:
+                            self.next_button_selector = f"//{selected['tag']}[contains(., '{selected['text']}')]"
+                        else:
+                            self.next_button_selector = None
+                        
+                        if self.next_button_selector:
+                            logger.info(f"\nTesting selector...")
+                            
+                            # Test it
+                            try:
+                                test_elem = self.driver.find_element(By.XPATH, self.next_button_selector)
+                                # Highlight the button
+                                self.driver.execute_script("arguments[0].style.border='3px solid red'", test_elem)
+                                confirm = input("\nI've highlighted a button in RED. Is this the correct Next button? (y/n): ").strip().lower()
+                                self.driver.execute_script("arguments[0].style.border=''", test_elem)
+                                
+                                if confirm == 'y':
+                                    logger.info("✅ Pagination calibrated successfully!")
+                                    # Save calibration
+                                    self.save_calibration(base_url, self.next_button_selector)
+                                    return True
+                                else:
+                                    logger.info("Let's try again...")
+                                    
+                            except Exception as e:
+                                logger.warning(f"Could not verify the selector: {e}")
+                        
+                        break
+                except ValueError:
+                    logger.warning("Please enter a valid number or 's' to skip.")
+        else:
+            logger.warning("No potential Next buttons found automatically.")
+        
+        # Manual fallback
+        logger.info("\n" + "-"*60)
+        logger.info("MANUAL SELECTOR OPTION")
+        logger.info("-"*60)
+        manual = input("\nWould you like to try without calibration? The script will use standard detection. (y/n): ").strip().lower()
+        
+        if manual == 'n':
+            logger.info("\nFor advanced users: You can provide a custom XPath selector.")
+            logger.info("Examples:")
+            logger.info("  //a[contains(text(), 'Next')]")
+            logger.info("  //*[@id='nextButton']")
+            logger.info("  //a[@class='next-page']")
+            
+            custom = input("\nEnter custom XPath (or press Enter to skip): ").strip()
+            if custom:
+                self.next_button_selector = custom
+                logger.info(f"Will try custom selector: {self.next_button_selector}")
+                # Save custom calibration
+                self.save_calibration(base_url, self.next_button_selector)
+                return True
+        
+        return False
+
+    def navigate_to_next_page_with_calibration(self):
+        """Navigate using calibrated selector first, then fallback to original method"""
+        logger.info("Attempting to navigate to next page...")
+        
+        # Capture current state
+        old_state = self.get_page_state()
+        
+        # Try calibrated selector first if available
+        if self.next_button_selector:
+            try:
+                logger.info(f"Using calibrated selector: {self.next_button_selector}")
+                next_button = self.driver.find_element(By.XPATH, self.next_button_selector)
+                
+                if next_button.is_displayed() and next_button.is_enabled():
+                    # Click the button
+                    self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", next_button)
+                    time.sleep(0.5)
+                    
+                    # Try JavaScript click first
+                    try:
+                        self.driver.execute_script("arguments[0].click();", next_button)
+                    except:
+                        # Fallback to regular click
+                        next_button.click()
+                    
+                    # Wait for page to load
+                    time.sleep(3)
+                    
+                    # Enhanced verification
+                    if self.verify_page_changed(old_state):
+                        logger.info("✅ Successfully navigated using calibrated selector!")
+                        return True
+                    else:
+                        logger.warning("Click executed but page didn't change.")
+                        
+            except Exception as e:
+                logger.warning(f"Calibrated selector failed: {e}")
+                logger.info("Falling back to standard detection...")
+        
+        # Fallback to original navigation method
+        return self.navigate_to_next_page()
 
     def try_select_all_records(self):
         """Try to find and use 'Select All' checkbox first"""
@@ -610,19 +963,8 @@ class Miller3DataScraper:
         logger.info("Attempting to navigate to next page...")
         time.sleep(1)
         
-        # Store current page state for comparison
-        current_url = self.driver.current_url
-        
-        # Try to capture current page content for comparison
-        try:
-            # Get current page number if visible
-            current_page_num = self.get_current_page_number()
-            
-            # Get current first checkbox or record to compare later
-            current_first_record = self.get_first_record_identifier()
-        except:
-            current_page_num = None
-            current_first_record = None
+        # Capture current state for verification
+        old_state = self.get_page_state()
         
         # Expanded selectors for next page navigation
         next_page_selectors = [
@@ -696,48 +1038,8 @@ class Miller3DataScraper:
                     # Wait for page to update
                     time.sleep(2)
                     
-                    # Check if navigation was successful using multiple methods
-                    navigation_successful = False
-                    
-                    # Method 1: Check URL change
-                    if self.driver.current_url != current_url:
-                        logger.info("Navigation confirmed: URL changed")
-                        navigation_successful = True
-                    
-                    # Method 2: Check if page number changed
-                    if not navigation_successful and current_page_num is not None:
-                        new_page_num = self.get_current_page_number()
-                        if new_page_num and new_page_num != current_page_num:
-                            logger.info(f"Navigation confirmed: Page number changed from {current_page_num} to {new_page_num}")
-                            navigation_successful = True
-                    
-                    # Method 3: Check if first record changed
-                    if not navigation_successful and current_first_record is not None:
-                        new_first_record = self.get_first_record_identifier()
-                        if new_first_record and new_first_record != current_first_record:
-                            logger.info("Navigation confirmed: First record changed")
-                            navigation_successful = True
-                    
-                    # Method 4: Wait for staleness of an element (indicates page reload)
-                    if not navigation_successful:
-                        try:
-                            old_element = self.driver.find_element(By.TAG_NAME, "body")
-                            WebDriverWait(self.driver, 5).until(EC.staleness_of(old_element))
-                            logger.info("Navigation confirmed: Page elements refreshed")
-                            navigation_successful = True
-                        except TimeoutException:
-                            pass
-                    
-                    # Method 5: Check for loading indicators
-                    if not navigation_successful:
-                        if self.wait_for_loading_complete():
-                            # Check again if content changed
-                            new_first_record = self.get_first_record_identifier()
-                            if new_first_record and new_first_record != current_first_record:
-                                logger.info("Navigation confirmed: Content changed after loading")
-                                navigation_successful = True
-                    
-                    if navigation_successful:
+                    # Enhanced verification
+                    if self.verify_page_changed(old_state):
                         # Extra wait to ensure page is fully loaded
                         time.sleep(2)
                         return True
@@ -1159,8 +1461,12 @@ class Miller3DataScraper:
             logger.error(f"Error merging CSV files: {e}")
 
     def run_workflow(self, url):
-        """ENHANCED: Main workflow runner with CSV merge options and Quick Mode."""
+        """ENHANCED: Main workflow runner with CSV merge options, Quick Mode, and Calibration."""
         try:
+            # Check for resume option
+            if self.check_for_resume():
+                logger.info("Resuming from previous session...")
+            
             # NEW: Get initial user options
             initial_choice = self.get_initial_options()
             
@@ -1182,6 +1488,26 @@ class Miller3DataScraper:
             
             self.get_automation_mode()
             self.get_page_limits()  # Get user-defined page limits (includes Quick Mode option)
+            
+            # NEW: Calibrate pagination for fully automated mode
+            if self.automation_mode == 'full':
+                logger.info("\n" + "="*80)
+                logger.info("FULLY AUTOMATED MODE SETUP")
+                logger.info("="*80)
+                logger.info("Since you selected fully automated mode, let's set up pagination.")
+                logger.info("This helps the script find the 'Next' button on this website.")
+                logger.info("="*80)
+                
+                calibration_success = self.calibrate_next_button()
+                
+                if calibration_success and self.next_button_selector:
+                    logger.info("\n✅ Pagination setup complete!")
+                    logger.info("The script will now use your calibrated Next button.")
+                    # Replace the navigation method to use calibration
+                    self.navigate_to_next_page = self.navigate_to_next_page_with_calibration
+                else:
+                    logger.info("\nProceeding with standard pagination detection.")
+                    logger.info("The script will try to find the Next button automatically.")
             
             # Add option for debugging
             debug_choice = input("\nWould you like to enable debug mode? (y/n): ").strip().lower()
@@ -1241,6 +1567,9 @@ class Miller3DataScraper:
                     else:
                         consecutive_failures = 0  # Reset failure counter
                         total_selected_in_batch += selected
+                    
+                    # Save progress after each page
+                    self.save_progress()
                     
                     # Navigate to next page if not the last page in batch
                     if i < self.pages_per_batch - 1:
@@ -1319,6 +1648,9 @@ class Miller3DataScraper:
                         if download_complete:
                             self.pages_downloaded += page_in_batch
                             logger.info(f"Batch {batch_number} download complete. Total pages downloaded so far: {self.pages_downloaded}")
+                            
+                            # Save progress after successful download
+                            self.save_progress()
                             
                             # Check against user-defined limit
                             if self.pages_downloaded >= self.max_pages_to_download:

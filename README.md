@@ -1,344 +1,318 @@
-# Miller 3 Data Scraper - Enhanced Version with CSV Merge Options
+# Enhanced Scraper
 
-## Overview
-An advanced web scraper for Miller 3 Data (Reference USA) with both semi-automated and fully automated modes, batch processing, and comprehensive CSV merge capabilities. The scraper now includes standalone CSV merge functionality and enhanced end-of-session merge options.
+A powerful web scraper designed for Reference USA and similar database websites with advanced pagination calibration, session resume, and automated data extraction capabilities.
 
-## 🆕 NEW CSV MERGE FEATURES
+## 🌟 Key Features
 
-### ✨ **Initial Options Menu**
-When you start the scraper, you'll see:
-```
-================================================================================
-INITIAL OPTIONS
-================================================================================
-What would you like to do?
-1. Start scraping new data
-2. Merge existing CSV files in downloads folder
-3. Both - merge existing files first, then start scraping
-================================================================================
-```
+- **Pagination Calibration**: One-time setup to identify Next button for fully automated mode
+- **Session Resume**: Continue from where you left off if interrupted
+- **Quick Mode**: Download exactly 10 pages at a time (recommended for reliability)
+- **Smart Page Detection**: Multiple verification methods ensure successful navigation
+- **CSV Merge Tool**: Combine multiple CSV files with duplicate removal
+- **Semi & Fully Automated Modes**: Choose your level of automation
+- **Persistent Settings**: Saves calibrations and progress between sessions
 
-### ✨ **Standalone CSV Merge (Option 2)**
-- Merge existing CSV files **without any scraping**
-- Perfect for combining files from previous sessions
-- Works with ALL CSV files in your Downloads folder
-- Automatic duplicate detection and removal
+## 📋 Prerequisites
 
-### ✨ **End-of-Session Merge**
-- After completing scraping, option to merge all CSV files
-- Smart detection of current session vs existing files
-- Choose to merge all files or just current session
+### For Both Mac and Windows:
+- Python 3.7 or higher
+- Google Chrome browser (latest version)
+- ChromeDriver (instructions below)
+- Basic familiarity with command line/terminal
 
-## Key Features
-* **🆕 CSV Merge Options**: Standalone merge and end-of-session merge with duplicate removal
-* **Automation Modes**: Choose between Semi-Automated (you navigate pages) and Fully Automated (script handles everything)
-* **Enhanced Select All**: Automatically finds and uses "Select All" checkboxes when available
-* **Smart Record Selection**: Falls back to individual selection if Select All fails
-* **Batch Processing**: Configurable batch sizes (default: 10 pages per batch)
-* **User-Defined Limits**: Set specific page limits (1-1000 pages) or download all available
-* **Automated Navigation**: Automatically clicks next/arrow buttons in full automation mode
-* **No File Naming Prompts**: Uses default filenames from website, saves to Downloads folder
-* **Robust Error Handling**: Screenshots and page source capture for debugging
-* **Manual Fallbacks**: Manual assistance options when automation fails
-* **Download Limit Management**: Respects 1000-page limit per search and stops automatically
+## 🔧 Installation Guide
 
----
+### Windows 11 Users
 
-## IMPORTANT: ChromeDriver Security Warning
-When you run the scraper for the first time, your operating system may block ChromeDriver because it is an application downloaded from the internet.
+#### Step 1: Install Python
+1. Visit [python.org](https://www.python.org/downloads/)
+2. Download the latest Python 3.x installer for Windows
+3. Run the installer
+4. **IMPORTANT**: Check "Add Python to PATH" during installation
+5. Click "Install Now"
 
-* **On macOS**: You may see a warning that says **"ChromeDriver cannot be opened because the developer cannot be verified."**
-    * **Solution**: Open `System Settings` > `Privacy & Security`. Scroll down and you will see a message about "ChromeDriver" being blocked. Click the **"Allow Anyway"** button. You may need to run the launcher script one more time after allowing it.
+#### Step 2: Verify Python Installation
+1. Press `Win + R`, type `cmd`, press Enter
+2. Type `python --version` and press Enter
+3. You should see something like `Python 3.11.0`
 
-* **On Windows**: Windows Defender SmartScreen might show a blue screen that says **"Windows protected your PC"**.
-    * **Solution**: Click on **"More info"** and then click the **"Run anyway"** button.
-
----
-
-## Installation & Setup
-
-### Step 1: Requirements
-Ensure you have **Python 3.7+** and **Google Chrome** installed on your system.
-
-### Step 2: Install Dependencies
-Open a terminal or command prompt and run:
+#### Step 3: Install Required Python Packages
+In Command Prompt, run:
 ```bash
 pip install selenium pandas
 ```
 
-### Step 3: Download Files
-Ensure you have these files in the same folder:
-- `scraper_enhanced.py` (main scraper)
-- `launcher.py` (easy launcher)
-- `README.md` (this file)
+#### Step 4: Install ChromeDriver
+1. Open Chrome and check version: Menu (⋮) → Help → About Google Chrome
+2. Note your Chrome version (e.g., 120.0.6099.109)
+3. Visit [ChromeDriver Downloads](https://chromedriver.chromium.org/downloads)
+4. Download the ChromeDriver that matches your Chrome version
+5. Extract the `chromedriver.exe` file
+6. Place it in `C:\Windows\` or any folder in your PATH
 
----
+#### Step 5: Download the Scraper
+1. Save the `miller3_scraper.py` file to a folder (e.g., `C:\Users\YourName\Documents\Scraper`)
+2. Open Command Prompt
+3. Navigate to the folder: `cd C:\Users\YourName\Documents\Scraper`
 
-## How to Use
+### Mac Users
 
-### Method 1: Easy Launcher (Recommended)
-**Double-click `launcher.py`** to start the scraper with a user-friendly interface.
+#### Step 1: Install Python (if not already installed)
+1. Open Terminal (Cmd + Space, type "Terminal")
+2. Check if Python is installed: `python3 --version`
+3. If not installed:
+   - Visit [python.org](https://www.python.org/downloads/)
+   - Download and install the latest Python 3.x for macOS
+   - OR use Homebrew: `brew install python3`
 
-### Method 2: Direct Command Line
+#### Step 2: Install Required Python Packages
+In Terminal, run:
 ```bash
-python scraper_enhanced.py
+pip3 install selenium pandas
 ```
 
-## Usage Workflows
+#### Step 3: Install ChromeDriver
 
-### 🔄 **Workflow 1: Standalone CSV Merge**
-Perfect for combining files from previous sessions:
-1. Run the scraper (`launcher.py` or command line)
-2. **Choose Option 2**: "Merge existing CSV files in downloads folder"
-3. Review the list of CSV files found
-4. Confirm merge to create a single combined file
-5. Done! No browser opens, no scraping occurs
-
-**Example Output:**
-```
-Found 5 CSV files in downloads folder:
-  1. data_20250101_120000.csv (15,432 bytes)
-  2. data_20250102_130000.csv (23,891 bytes)
-  3. data_20250103_140000.csv (18,765 bytes)
-
-Would you like to merge all 5 CSV files into one? (y/n): y
-Merged file saved as: merged_data_20250103_145030.csv
-Total records in merged file: 2,847
+**Option A: Using Homebrew (Recommended)**
+```bash
+brew install --cask chromedriver
 ```
 
-### 🕷️ **Workflow 2: Fresh Scraping Session**
-For new data collection:
-1. Run the scraper
-2. **Choose Option 1**: "Start scraping new data"
-3. Browser opens to Reference USA website
-4. Login and perform your search manually
-5. Navigate to first page of results
-6. Choose automation mode (Semi or Fully Automated)
-7. Set page limits (All pages or specific number)
-8. Scraper processes data in batches
-9. At the end, option to merge all CSV files
+**Option B: Manual Installation**
+1. Open Chrome and check version: Chrome → About Google Chrome
+2. Note your Chrome version
+3. Visit [ChromeDriver Downloads](https://chromedriver.chromium.org/downloads)
+4. Download the ChromeDriver for Mac (choose ARM64 for M1/M2 Macs, or x64 for Intel)
+5. Extract the file
+6. Move to usr/local/bin: `sudo mv chromedriver /usr/local/bin/`
+7. Make it executable: `sudo chmod +x /usr/local/bin/chromedriver`
+8. Allow in Security settings if prompted
 
-### 🔄🕷️ **Workflow 3: Merge Then Scrape**
-Combine existing files, then collect more data:
-1. Run the scraper
-2. **Choose Option 3**: "Both - merge existing files first, then start scraping"
-3. Existing files are merged first
-4. Then continues with fresh scraping session
-5. Final merge option includes all files (old + new)
+#### Step 4: Download the Scraper
+1. Save the `miller3_scraper.py` file to a folder (e.g., `~/Documents/Scraper`)
+2. Open Terminal
+3. Navigate to the folder: `cd ~/Documents/Scraper`
 
-## 🎛️ Configuration Options
+## 🚀 Usage Instructions
 
-### **Automation Modes**
+### Starting the Scraper
+
+**Windows 11:**
+```bash
+python miller3_scraper.py
 ```
-Choose automation level:
+
+**Mac:**
+```bash
+python3 miller3_scraper.py
+```
+
+### Step-by-Step Usage Guide
+
+#### 1. Initial Options Menu
+When you start the scraper, you'll see:
+```
+INITIAL OPTIONS
+================
+What would you like to do?
+1. Start scraping new data
+2. Merge existing CSV files in downloads folder
+3. Both - merge existing files first, then start scraping
+```
+
+- Choose `1` for normal scraping
+- Choose `2` to only merge existing CSV files
+- Choose `3` to merge files then continue scraping
+
+#### 2. Resume Previous Session (if available)
+If you have a previous incomplete session, you'll see:
+```
+Found previous session:
+  Last page: 15
+  Pages downloaded: 14
+
+Resume from previous session? (y/n):
+```
+
+#### 3. Login and Setup
+1. Chrome will open to Reference USA
+2. **Login** with your credentials
+3. **Perform your search** (enter search criteria)
+4. **Navigate to the first results page**
+5. Press Enter when ready
+
+#### 4. Choose Automation Mode
+```
+AUTOMATION MODE SELECTION
+========================
 1. Semi-Automated (you navigate between pages)
 2. Fully Automated (script navigates pages)
 ```
 
-- **Semi-Automated**: You manually navigate pages, script selects records and downloads
-- **Fully Automated**: Script handles everything with intelligent fallbacks to manual mode
+- **Semi-Automated**: You manually click "Next" between pages
+- **Fully Automated**: Script automatically navigates (recommended)
 
-### **Page Download Limits**
+#### 5. Choose Page Limits
 ```
-Choose how many pages to download:
-1. Download ALL available pages (up to 1000 limit)
-2. Download a specific number of pages
-```
-
-### **Debug Mode**
-Enable debug mode for troubleshooting:
-- Page structure analysis
-- Element detection debugging
-- Enhanced logging and screenshots
-
-## 📁 Directory Structure
-
-The scraper automatically creates this structure:
-```
-├── scraper_enhanced.py        # Main scraper script
-├── launcher.py               # Easy launcher (double-click to run)
-├── README.md                # This documentation
-├── Downloads/               # All CSV files saved here
-│   ├── data_20250103_143022.csv
-│   ├── data_20250103_144513.csv
-│   └── merged_data_20250103_145030.csv
-└── Screenshots/             # Debug screenshots and page sources
-    ├── error_screenshot_*.png
-    └── page_source_*.html
+PAGE DOWNLOAD LIMITS
+===================
+1. Quick Mode - Download exactly 10 pages then stop (RECOMMENDED)
+2. Download ALL available pages (up to 1000 limit)
+3. Download a specific number of pages
 ```
 
-## 📊 CSV Merge Process
+- **Quick Mode** is most reliable, especially for beginners
+- You can run multiple Quick Mode sessions to get more data
 
-### **What Gets Merged**
-- All `.csv` files in the Downloads folder
-- Combines using pandas for robust data handling
-- Removes duplicate records automatically
-- Creates timestamped output: `merged_data_YYYYMMDD_HHMMSS.csv`
+#### 6. Pagination Calibration (Fully Automated Mode Only)
 
-### **Merge Examples**
+The scraper will help you identify the "Next" button:
 
-**End-of-Session Merge:**
+1. Make sure a "Next" button is visible on screen
+2. Press Enter when ready
+3. You'll see a list of potential buttons with scores:
+   ```
+   Found 5 potential 'Next' buttons (sorted by likelihood):
+   1. A: 'Next »' [score: 23, class='pagination-next']
+   2. BUTTON: '>' [score: 13, class='nav-arrow']
+   3. A: '2' [score: 5, class='page-number']
+   ```
+4. Enter the number of the correct "Next" button
+5. The button will be highlighted in RED for confirmation
+6. Type 'y' if correct
+
+**Note**: This calibration is saved and reused in future sessions!
+
+#### 7. The Scraping Process
+
+The scraper will:
+1. **Select records** on each page (tries "Select All" first)
+2. **Navigate** through pages in batches of 10
+3. **Download** the selected records as CSV files
+4. **Save progress** automatically
+
+You'll see updates like:
 ```
-================================================================================
-DOWNLOAD SUMMARY
-Total pages downloaded: 25
-Files saved to: /path/to/Downloads
-
-Downloaded files this session:
-  - data_20250103_143022.csv (15,432 bytes)
-  - data_20250103_144513.csv (23,891 bytes)
-
-Total CSV files in downloads folder: 7
-Downloaded this session: 2
-Existing files: 5
-
-Would you like to merge all 7 CSV files into one? (y/n): y
-
-Merging 7 CSV files...
-Added 445 rows from data_20250101_120000.csv
-Added 892 rows from data_20250102_130000.csv
-Added 657 rows from data_20250103_140000.csv
-Added 523 rows from data_20250103_141500.csv
-Added 389 rows from data_20250103_143000.csv
-Added 534 rows from data_20250103_143022.csv
-Added 612 rows from data_20250103_144513.csv
-Removed 15 duplicate records
-Merged file saved as: merged_data_20250103_145030.csv
-Total records in merged file: 4,037
+Processing Page 1 (Batch 1, Page 1/10)
+Select All successful! 51 total checkboxes selected.
 ```
 
-## 🔧 Advanced Features
+#### 8. Manual Intervention (if needed)
 
-### **Enhanced Select All**
-- Automatically detects and uses "Select All" checkboxes
-- Multiple detection patterns for different website layouts
-- Falls back to individual selection if Select All unavailable
+If automatic selection fails:
+```
+Would you like to:
+1. Try manual selection
+2. Skip this page
+3. Stop scraping
+Enter choice (1-3):
+```
 
-### **Intelligent Page Navigation**
-- Multiple selector patterns for "Next" buttons
-- Automatic URL change detection
-- Fallback to manual navigation when needed
+For manual selection:
+1. Click checkboxes manually on the webpage
+2. Press Enter when done
 
-### **Smart Download Detection**
-- Monitors download folder in real-time
-- Handles various download states (.crdownload, .tmp, .part)
-- Manual download assistance when automation fails
+#### 9. Download Process
 
-### **Robust Error Handling**
-- Automatic screenshot capture on failures
-- Page source saving for debugging
-- Multiple retry strategies with user choices
+After selecting records, the scraper will:
+1. Navigate to the download page
+2. Click the download button
+3. Wait for the CSV file to download
+
+If automatic download fails, follow the on-screen instructions for manual download.
+
+#### 10. Final CSV Merge
+
+At the end, you'll be asked:
+```
+Total CSV files in downloads folder: 5
+Downloaded this session: 3
+Existing files: 2
+
+Would you like to merge all 5 CSV files into one? (y/n):
+```
+
+## 📁 File Structure
+
+After running, you'll have:
+```
+Scraper Folder/
+├── miller3_scraper.py      # The main script
+├── Downloads/              # All downloaded CSV files
+│   ├── download_1.csv
+│   ├── download_2.csv
+│   └── merged_data_20240115_143022.csv
+├── Screenshots/            # Debug screenshots (if any errors)
+│   └── error_screenshot_1234567.png
+└── Config/                 # Saved settings
+    ├── calibrations.json   # Saved Next button calibrations
+    └── .scraper_progress.json  # Session progress
+```
 
 ## 🛠️ Troubleshooting
 
-### **No Records Selected**
-1. Enable debug mode: Answer "y" when prompted
-2. Review debug output and screenshots
-3. Try manual selection mode when offered
-4. Check `Screenshots/` folder for debug information
+### Common Issues and Solutions
 
-### **Download Fails**
-1. Script provides manual download assistance
-2. Complete download manually when prompted
-3. Script automatically detects manually downloaded files
-4. Confirm completion when asked
+#### "Chrome driver not found" Error
+- **Windows**: Make sure chromedriver.exe is in your PATH or in C:\Windows\
+- **Mac**: Run `which chromedriver` to verify installation
 
-### **CSV Merge Issues**
-1. Ensure CSV files have consistent column structure
-2. Check file permissions in Downloads folder
-3. Review console output for specific error details
-4. Verify pandas is properly installed: `pip install pandas`
+#### "No module named selenium" Error
+- **Windows**: Run `pip install selenium`
+- **Mac**: Run `pip3 install selenium`
 
-### **Page Navigation Problems**
-1. Switch to semi-automated mode for manual control
-2. Navigate pages manually when prompted
-3. Enable debug mode to identify page elements
-4. Check Screenshots folder for page structure analysis
+#### Chrome Opens but Nothing Happens
+- Make sure you're using a compatible ChromeDriver version
+- Update Chrome to the latest version
+- Download matching ChromeDriver version
 
-## ⚙️ Customization
+#### Can't Find Next Button During Calibration
+1. Try option 's' to skip calibration
+2. Use semi-automated mode instead
+3. Check if the page has fully loaded
 
-### **Batch Size**
-Modify in the script's `__init__` method:
-```python
-self.pages_per_batch = 10  # Change to desired batch size
-```
+#### Downloads Not Working
+1. Check your Chrome download settings
+2. Make sure the Downloads folder exists
+3. Try manual download option when prompted
 
-### **Timeout Settings**
-```python
-self.wait = WebDriverWait(self.driver, 20)  # Page load timeout
-timeout=120  # Download completion timeout (in wait_for_download_complete)
-```
+#### Session Resume Not Working
+- Check if `.scraper_progress.json` exists in Config folder
+- Sessions expire after 24 hours
+- Delete the file to start fresh
 
-### **Download Directory**
-```python
-# Custom download directory
-scraper = Miller3DataScraper(download_dir="/path/to/custom/downloads")
-```
+### Debug Mode
 
-## 🎯 Supported Websites
+Enable debug mode when prompted to get detailed information about:
+- Page structure analysis
+- Checkbox detection
+- Download workflow elements
 
-Primarily optimized for **Reference USA** but adaptable to other data platforms with:
-- Tabular data with selectable checkboxes
-- Pagination controls (Next buttons, page numbers)
-- Download/export functionality
-- Batch download capabilities
+## 💡 Best Practices
 
-## 📈 Performance Tips
+1. **Start with Quick Mode** (10 pages) to test your setup
+2. **Save your search** in Reference USA for easy access
+3. **Run multiple Quick Mode sessions** for large datasets
+4. **Monitor the first batch** to ensure everything works
+5. **Use CSV merge** to combine all downloaded files
+6. **Keep Chrome visible** to monitor progress
 
-1. **Use Fully Automated Mode** for fastest processing
-2. **Enable Select All** detection (automatic when available)
-3. **Set realistic page limits** to avoid session timeouts
-4. **Monitor download folder size** for disk space management
-5. **Use standalone merge** regularly to consolidate files
-6. **Close other browser windows** to reduce resource conflicts
+## ⚠️ Important Notes
 
-## 🔒 Best Practices
+- The scraper respects a max limit of 1000 pages per session
+- Downloaded files are saved with timestamps
+- Calibrations are saved per website URL
+- Progress is saved after each page
+- Always have a stable internet connection
 
-### **Before Scraping**
-- Ensure stable internet connection
-- Close unnecessary browser windows
-- Verify adequate disk space
-- Test with small page limits first
+## 🤝 Support
 
-### **During Scraping**
-- Monitor console output for errors
-- Don't interact with the automated browser window
-- Keep the terminal/command prompt window visible
-- Have backup manual navigation ready
+If you encounter issues:
+1. Enable debug mode for detailed logs
+2. Check the Screenshots folder for error captures
+3. Verify all prerequisites are installed correctly
+4. Try semi-automated mode as a fallback
 
-### **After Scraping**
-- Review downloaded files for completeness
-- Use merge functionality to consolidate data
-- Check Screenshots folder if issues occurred
-- Backup important data files
+## 📄 License
 
-## 🐛 Debug Information
-
-When reporting issues, include:
-- Console log output (copy and paste)
-- Screenshots from `Screenshots/` folder
-- Page source HTML files (if generated)
-- Website URL and specific page details
-- Operating system and Python version
-
-## 🔗 Target Website
-
-**Primary URL**: `https://referenceusa.com.us1.proxy.openathens.net/`
-
-The scraper is optimized for Reference USA's interface but can be adapted for similar data platforms.
-
-## 📄 License & Disclaimer
-
-This tool is for educational and research purposes. Users must:
-- Comply with website terms of service
-- Respect data usage policies
-- Use responsibly and ethically
-- Ensure proper attribution of data sources
-
----
-
-**Version**: Enhanced with CSV Merge Options  
-**Last Updated**: January 2025  
-**Author**: Miller 3 Data Scraper Team
-
-**Quick Start**: Double-click `launcher.py` to begin!
+This tool is for educational and research purposes. Always comply with website terms of service and robots.txt files.

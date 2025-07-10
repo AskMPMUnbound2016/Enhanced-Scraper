@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Miller 3 Data Scraper - Enhanced Version with CSV Merge Options
-NEW CSV MERGE ENHANCEMENTS:
+Miller 3 Data Scraper - Enhanced Version with CSV Merge Options and Quick Mode
+NEW FEATURES:
+- Quick Mode: Download exactly 10 pages at a time (RECOMMENDED for reliability)
+- Enhanced pagination fix for fully automated mode
 - Standalone option to merge existing CSV files before scraping
 - Enhanced merge option that includes ALL CSV files in downloads folder
 - Option to merge existing files + new downloads together
-
-[All previous enhancements remain unchanged]
 """
 
 import time
@@ -60,6 +60,7 @@ class Miller3DataScraper:
         self.end_page = None
         self.pages_downloaded = 0
         self._last_files = set()
+        self.single_batch_mode = False  # NEW: Flag for 10-page quick mode
 
     def setup_driver(self):
         """Setup Chrome driver with appropriate options"""
@@ -168,35 +169,53 @@ class Miller3DataScraper:
                 logger.warning("Invalid choice. Please enter 1 or 2.")
 
     def get_page_limits(self):
-        """Get user's choice for how many pages to download"""
+        """Get user's choice for how many pages to download - ENHANCED with Quick Mode"""
         logger.info("\n" + "="*80)
         logger.info("PAGE DOWNLOAD LIMITS")
         logger.info("="*80)
         logger.info("Choose how many pages to download:")
-        logger.info("1. Download ALL available pages (up to 1000 limit)")
-        logger.info("2. Download a specific number of pages")
+        logger.info("1. Quick Mode - Download exactly 10 pages then stop (RECOMMENDED)")
+        logger.info("2. Download ALL available pages (up to 1000 limit)")
+        logger.info("3. Download a specific number of pages")
+        logger.info("="*80)
+        logger.info("\n📌 Quick Mode is recommended for reliability, especially with")
+        logger.info("   fully automated mode. You can run multiple times for more pages.")
         logger.info("="*80)
         
         while True:
-            choice = input("\nEnter your choice (1-2): ").strip()
+            choice = input("\nEnter your choice (1-3): ").strip()
             if choice == '1':
-                self.max_pages_to_download = self.max_downloads  # Use existing limit
-                logger.info(f"Will download all available pages (up to {self.max_downloads} pages)")
+                self.max_pages_to_download = 10
+                self.single_batch_mode = True  # Enable single batch mode
+                logger.info("\n✅ Quick Mode selected!")
+                logger.info("Will download exactly 10 pages in a single batch then stop.")
+                logger.info("You can run the script again to download the next 10 pages.")
                 return
             elif choice == '2':
+                self.max_pages_to_download = self.max_downloads  # Use existing limit
+                self.single_batch_mode = False
+                logger.info(f"Will download all available pages (up to {self.max_downloads} pages)")
+                return
+            elif choice == '3':
                 while True:
                     try:
                         pages = int(input("Enter number of pages to download (1-1000): ").strip())
                         if 1 <= pages <= 1000:
                             self.max_pages_to_download = pages
-                            logger.info(f"Will download {pages} pages")
+                            # For 10 or fewer pages, use single batch mode
+                            if pages <= 10:
+                                self.single_batch_mode = True
+                                logger.info(f"Will download {pages} pages in a single batch")
+                            else:
+                                self.single_batch_mode = False
+                                logger.info(f"Will download {pages} pages")
                             return
                         else:
                             logger.warning("Please enter a number between 1 and 1000.")
                     except ValueError:
                         logger.warning("Please enter a valid number.")
             else:
-                logger.warning("Invalid choice. Please enter 1 or 2.")
+                logger.warning("Invalid choice. Please enter 1, 2, or 3.")
 
     def try_select_all_records(self):
         """Try to find and use 'Select All' checkbox first"""
@@ -461,7 +480,6 @@ class Miller3DataScraper:
         # If Select All failed or we want limited records, proceed with individual selection
         logger.info("Proceeding with individual record selection...")
         
-        # [Rest of the existing auto_select_pages method stays exactly the same]
         # Expanded list of checkbox selectors for better compatibility
         checkbox_selectors = [
             # Original selectors
@@ -588,41 +606,256 @@ class Miller3DataScraper:
         return selected_count
 
     def navigate_to_next_page(self):
-        """Automatically navigate to the next page."""
+        """Automatically navigate to the next page - Enhanced version."""
         logger.info("Attempting to navigate to next page...")
         time.sleep(1)
         
+        # Store current page state for comparison
+        current_url = self.driver.current_url
+        
+        # Try to capture current page content for comparison
+        try:
+            # Get current page number if visible
+            current_page_num = self.get_current_page_number()
+            
+            # Get current first checkbox or record to compare later
+            current_first_record = self.get_first_record_identifier()
+        except:
+            current_page_num = None
+            current_first_record = None
+        
         # Expanded selectors for next page navigation
         next_page_selectors = [
+            # Standard text-based selectors
             "//a[contains(text(), 'Next') and not(contains(@class, 'disabled'))]",
             "//a[contains(., 'Next') and not(contains(@class, 'disabled'))]",
             "//button[contains(text(), 'Next') and not(@disabled)]",
             "//button[contains(., 'Next') and not(@disabled)]",
+            
+            # Class-based selectors
             "//a[contains(@class, 'next') and not(contains(@class, 'disabled'))]",
             "//li[contains(@class, 'next') and not(contains(@class, 'disabled'))]/a",
+            "//li[@class='next']/a",
+            "//li[@class='pagination-next']/a",
+            
+            # Title/aria-label selectors
             "//a[@title='Next Page' and not(contains(@class, 'disabled'))]",
             "//a[@aria-label='Next page' and not(contains(@class, 'disabled'))]",
-            "//a[.//span[contains(text(),'Next')]]",
-            "//div[contains(@class, 'pagination')]//a[contains(text(), 'Next')]",
+            "//a[@aria-label='Go to next page']",
+            
+            # Icon-based selectors
             "//a[contains(text(), '›')]",
-            "//a[contains(text(), '»')]"
+            "//a[contains(text(), '»')]",
+            "//a[contains(text(), '→')]",
+            "//button[contains(text(), '›')]",
+            "//button[contains(text(), '»')]",
+            
+            # Pagination container selectors
+            "//div[contains(@class, 'pagination')]//a[contains(text(), 'Next')]",
+            "//ul[contains(@class, 'pagination')]//a[contains(text(), 'Next')]",
+            "//nav[@aria-label='pagination']//a[contains(text(), 'Next')]",
+            
+            # Image/icon within link
+            "//a[.//img[@alt='Next']]",
+            "//a[.//i[contains(@class, 'next')]]",
+            "//a[.//span[contains(text(),'Next')]]",
+            
+            # Input button selectors
+            "//input[@type='button' and contains(@value, 'Next')]",
+            "//input[@type='submit' and contains(@value, 'Next')]",
+            
+            # Data attribute selectors
+            "//a[@data-action='next']",
+            "//button[@data-action='next']",
+            
+            # ReferenceUSA specific patterns
+            "//a[contains(@onclick, 'next')]",
+            "//a[contains(@href, 'page=') and contains(text(), 'Next')]",
+            "//a[contains(@href, 'pageNum=') and contains(text(), 'Next')]"
         ]
 
         for selector in next_page_selectors:
             try:
                 next_button = self.driver.find_element(By.XPATH, selector)
                 if next_button.is_displayed() and next_button.is_enabled():
-                    current_url = self.driver.current_url
-                    self.driver.execute_script("arguments[0].click();", next_button)
-                    time.sleep(3) # Wait for page to load
+                    logger.info(f"Found potential next button with selector: {selector}")
+                    
+                    # Scroll to button
+                    self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", next_button)
+                    time.sleep(0.5)
+                    
+                    # Try JavaScript click first
+                    try:
+                        self.driver.execute_script("arguments[0].click();", next_button)
+                        logger.info("Clicked next button using JavaScript")
+                    except:
+                        # Fallback to regular click
+                        next_button.click()
+                        logger.info("Clicked next button using regular click")
+                    
+                    # Wait for page to update
+                    time.sleep(2)
+                    
+                    # Check if navigation was successful using multiple methods
+                    navigation_successful = False
+                    
+                    # Method 1: Check URL change
                     if self.driver.current_url != current_url:
-                        logger.info(f"Successfully navigated to next page using selector: {selector}")
+                        logger.info("Navigation confirmed: URL changed")
+                        navigation_successful = True
+                    
+                    # Method 2: Check if page number changed
+                    if not navigation_successful and current_page_num is not None:
+                        new_page_num = self.get_current_page_number()
+                        if new_page_num and new_page_num != current_page_num:
+                            logger.info(f"Navigation confirmed: Page number changed from {current_page_num} to {new_page_num}")
+                            navigation_successful = True
+                    
+                    # Method 3: Check if first record changed
+                    if not navigation_successful and current_first_record is not None:
+                        new_first_record = self.get_first_record_identifier()
+                        if new_first_record and new_first_record != current_first_record:
+                            logger.info("Navigation confirmed: First record changed")
+                            navigation_successful = True
+                    
+                    # Method 4: Wait for staleness of an element (indicates page reload)
+                    if not navigation_successful:
+                        try:
+                            old_element = self.driver.find_element(By.TAG_NAME, "body")
+                            WebDriverWait(self.driver, 5).until(EC.staleness_of(old_element))
+                            logger.info("Navigation confirmed: Page elements refreshed")
+                            navigation_successful = True
+                        except TimeoutException:
+                            pass
+                    
+                    # Method 5: Check for loading indicators
+                    if not navigation_successful:
+                        if self.wait_for_loading_complete():
+                            # Check again if content changed
+                            new_first_record = self.get_first_record_identifier()
+                            if new_first_record and new_first_record != current_first_record:
+                                logger.info("Navigation confirmed: Content changed after loading")
+                                navigation_successful = True
+                    
+                    if navigation_successful:
+                        # Extra wait to ensure page is fully loaded
+                        time.sleep(2)
                         return True
+                        
             except (NoSuchElementException, ElementNotInteractableException):
+                continue
+            except Exception as e:
+                logger.debug(f"Error with selector {selector}: {e}")
                 continue
         
         logger.warning("Could not find or click the 'Next' page button.")
+        
+        # Take screenshot for debugging
+        screenshot_path = os.path.join(self.screenshots_dir, f"pagination_failed_{int(time.time())}.png")
+        self.driver.save_screenshot(screenshot_path)
+        logger.info(f"Pagination debug screenshot saved to: {screenshot_path}")
+        
         return False
+
+    def get_current_page_number(self):
+        """Try to extract the current page number from the page."""
+        page_number_selectors = [
+            # Common pagination patterns
+            "//span[@class='current-page']",
+            "//li[@class='active']//a",
+            "//a[@class='current']",
+            "//strong[@class='current']",
+            "//span[contains(@class, 'current')]",
+            "//li[contains(@class, 'active')]//span",
+            
+            # Page X of Y patterns
+            "//span[contains(text(), 'Page')]",
+            "//div[contains(text(), 'Page')]",
+            
+            # Input field patterns
+            "//input[@type='text' and contains(@name, 'page')]",
+            "//input[@type='number' and contains(@name, 'page')]",
+            
+            # ReferenceUSA specific
+            "//span[@id='currentPage']",
+            "//input[@id='pageNumber']"
+        ]
+        
+        for selector in page_number_selectors:
+            try:
+                element = self.driver.find_element(By.XPATH, selector)
+                text = element.text or element.get_attribute('value')
+                if text:
+                    # Extract number from text
+                    import re
+                    numbers = re.findall(r'\d+', text)
+                    if numbers:
+                        return int(numbers[0])
+            except:
+                continue
+        return None
+
+    def get_first_record_identifier(self):
+        """Get an identifier for the first record on the page to detect content changes."""
+        try:
+            # Try to find the first checkbox value
+            first_checkbox = self.driver.find_element(By.XPATH, "//tbody//input[@type='checkbox'][1]")
+            return first_checkbox.get_attribute('value') or first_checkbox.get_attribute('id')
+        except:
+            pass
+        
+        try:
+            # Try to find first row text
+            first_row = self.driver.find_element(By.XPATH, "//tbody/tr[1]")
+            return first_row.text[:100]  # First 100 chars
+        except:
+            pass
+        
+        try:
+            # Try any first data cell
+            first_cell = self.driver.find_element(By.XPATH, "//td[contains(text(), '')]")
+            return first_cell.text[:50]
+        except:
+            pass
+        
+        return None
+
+    def wait_for_loading_complete(self, timeout=10):
+        """Wait for any loading indicators to disappear."""
+        loading_indicators = [
+            "//div[contains(@class, 'loading')]",
+            "//div[contains(@class, 'spinner')]",
+            "//div[contains(@class, 'loader')]",
+            "//img[contains(@src, 'loading')]",
+            "//div[contains(@id, 'loading')]",
+            "//div[contains(text(), 'Loading')]",
+            "//div[contains(@class, 'progress')]",
+            "//div[@id='ajaxBusy']",
+            "//div[contains(@style, 'display: block') and contains(@class, 'wait')]"
+        ]
+        
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            loading_found = False
+            for selector in loading_indicators:
+                try:
+                    loading_element = self.driver.find_element(By.XPATH, selector)
+                    if loading_element.is_displayed():
+                        loading_found = True
+                        logger.debug(f"Loading indicator found: {selector}")
+                        break
+                except:
+                    continue
+            
+            if not loading_found:
+                # Also check for JavaScript readyState
+                ready_state = self.driver.execute_script("return document.readyState")
+                if ready_state == "complete":
+                    return True
+            
+            time.sleep(0.5)
+        
+        return True  # Return True anyway after timeout
 
     def navigate_to_download_page(self):
         """Navigate to the download page after selections are made - improved for Reference USA."""
@@ -926,7 +1159,7 @@ class Miller3DataScraper:
             logger.error(f"Error merging CSV files: {e}")
 
     def run_workflow(self, url):
-        """ENHANCED: Main workflow runner with CSV merge options."""
+        """ENHANCED: Main workflow runner with CSV merge options and Quick Mode."""
         try:
             # NEW: Get initial user options
             initial_choice = self.get_initial_options()
@@ -948,7 +1181,7 @@ class Miller3DataScraper:
             input("Press Enter when ready...")
             
             self.get_automation_mode()
-            self.get_page_limits()  # Get user-defined page limits
+            self.get_page_limits()  # Get user-defined page limits (includes Quick Mode option)
             
             # Add option for debugging
             debug_choice = input("\nWould you like to enable debug mode? (y/n): ").strip().lower()
@@ -1092,7 +1325,16 @@ class Miller3DataScraper:
                                 logger.info(f"Reached user-defined page limit of {self.max_pages_to_download} pages.")
                                 break
                             
-                            # Prepare for next batch
+                            # NEW: In single batch mode, stop after one batch
+                            if self.single_batch_mode:
+                                logger.info("\n" + "="*60)
+                                logger.info("QUICK MODE COMPLETE!")
+                                logger.info(f"Successfully downloaded {self.pages_downloaded} pages.")
+                                logger.info("To download more pages, simply run the script again.")
+                                logger.info("="*60)
+                                break
+                            
+                            # Only try to navigate back if not in single batch mode
                             logger.info("Preparing for next batch.")
                             
                             # Navigate back to results

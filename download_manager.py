@@ -391,13 +391,13 @@ class DownloadManager:
             "//input[@type='button' and contains(@value, 'Download Records')]"
         ]
         
-        for i, selector in enumerate(button_selectors, 1):
+        for attempt_num, selector in enumerate(button_selectors, 1):
             buttons = self.browser.find_elements(By.XPATH, selector)
             if buttons:
-                self.logger.log_button_detection(i, True, f"Selector: {selector}")
+                self.logger.log_button_detection(f"1.{attempt_num}", True, f"Selector: {selector}")
                 return buttons[0]
             else:
-                self.logger.log_button_detection(i, False)
+                self.logger.log_button_detection(f"1.{attempt_num}", False)
         
         # Strategy 2: Look for buttons containing "download" (case insensitive)
         download_buttons = self.browser.find_elements(By.XPATH, 
@@ -406,6 +406,7 @@ class DownloadManager:
             "//input[contains(translate(@value, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'download')]")
         
         if download_buttons:
+            self.logger.log_button_detection(2, True, "Case-insensitive text search")
             print(f"✅ Found {len(download_buttons)} download button(s) with case-insensitive search")
             # Filter for ones that likely say "records"
             for button in download_buttons:
@@ -416,6 +417,7 @@ class DownloadManager:
             # If no "records" found, return the first download button
             print(f"✅ Using first download button found: {download_buttons[0].text}")
             return download_buttons[0]
+        self.logger.log_button_detection(2, False)
         
         # Strategy 3: Look by class names or IDs that might contain "download"
         class_based_buttons = self.browser.find_elements(By.XPATH,
@@ -427,8 +429,10 @@ class DownloadManager:
             "//input[contains(@id, 'download')]")
         
         if class_based_buttons:
+            self.logger.log_button_detection(3, True, "Class/ID contains 'download'")
             print(f"✅ Found {len(class_based_buttons)} button(s) with download in class/id")
             return class_based_buttons[0]
+        self.logger.log_button_detection(3, False)
         
         # Strategy 4: Look for common download button containers
         container_buttons = self.browser.find_elements(By.XPATH,
@@ -438,8 +442,10 @@ class DownloadManager:
             "//form[contains(@class, 'download')]//input[@type='submit']")
         
         if container_buttons:
+            self.logger.log_button_detection(4, True, "Download container search")
             print(f"✅ Found {len(container_buttons)} button(s) in download containers")
             return container_buttons[0]
+        self.logger.log_button_detection(4, False)
         
         # Strategy 5: Look for any blue colored buttons (common for primary actions)
         blue_buttons = self.browser.find_elements(By.XPATH,
@@ -447,12 +453,14 @@ class DownloadManager:
             "//a[contains(@class, 'blue') or contains(@class, 'primary') or contains(@class, 'btn-primary')]")
         
         if blue_buttons:
+            self.logger.log_button_detection(5, True, "Primary/blue button search")
             print(f"✅ Found {len(blue_buttons)} blue/primary button(s), checking text...")
             for button in blue_buttons:
                 button_text = button.text.lower() if hasattr(button, 'text') else ''
                 if 'download' in button_text or 'record' in button_text:
                     print(f"✅ Found blue button with relevant text: {button.text}")
                     return button
+        self.logger.log_button_detection(5, False)
         
         # Strategy 6: Look in the top toolbar area where Download button is typically located
         toolbar_buttons = self.browser.find_elements(By.XPATH,
@@ -462,8 +470,10 @@ class DownloadManager:
             "//table/preceding-sibling::*//a[contains(text(), 'Download')]")
         
         if toolbar_buttons:
+            self.logger.log_button_detection(6, True, "Toolbar/nav search")
             print(f"✅ Found {len(toolbar_buttons)} button(s) in toolbar area")
             return toolbar_buttons[0]
+        self.logger.log_button_detection(6, False)
         
         # Strategy 7: Look in the bottom area of the page where the button appears to be
         bottom_buttons = self.browser.find_elements(By.XPATH,
@@ -473,18 +483,21 @@ class DownloadManager:
             "//form[position()>last()-3]//input[@type='submit']")
         
         if bottom_buttons:
+            self.logger.log_button_detection(7, True, "Bottom area search")
             print(f"✅ Found {len(bottom_buttons)} button(s) in bottom area, checking text...")
             for button in bottom_buttons:
                 button_text = button.text.lower() if hasattr(button, 'text') else button.get_attribute('value', '').lower()
                 if 'download' in button_text:
                     print(f"✅ Found bottom button with download text: {button.text}")
                     return button
+        self.logger.log_button_detection(7, False)
         
         # Strategy 8: Look for any visible Download button on the page
         all_download_elements = self.browser.find_elements(By.XPATH,
             "//*[contains(text(), 'Download') and (@href or @onclick or name()='button' or name()='input')]")
         
         if all_download_elements:
+            self.logger.log_button_detection(8, True, "Generic interactive Download search")
             print(f"✅ Found {len(all_download_elements)} download element(s) on page")
             # Filter for interactive elements that are likely buttons
             for element in all_download_elements:
@@ -493,6 +506,7 @@ class DownloadManager:
                     element_text = element.text or element.get_attribute('value') or ''
                     print(f"✅ Found interactive download element: {tag_name} - '{element_text}'")
                     return element
+        self.logger.log_button_detection(8, False)
         
         print("❌ Could not find Download Records button automatically")
         return None

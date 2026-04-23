@@ -453,11 +453,11 @@ class DownloadManager:
             "//a[contains(@class, 'blue') or contains(@class, 'primary') or contains(@class, 'btn-primary')]")
         
         if blue_buttons:
-            self.logger.log_button_detection(5, True, "Primary/blue button search")
             print(f"✅ Found {len(blue_buttons)} blue/primary button(s), checking text...")
             for button in blue_buttons:
                 button_text = button.text.lower() if hasattr(button, 'text') else ''
                 if 'download' in button_text or 'record' in button_text:
+                    self.logger.log_button_detection(5, True, "Primary/blue button search")
                     print(f"✅ Found blue button with relevant text: {button.text}")
                     return button
         self.logger.log_button_detection(5, False)
@@ -483,11 +483,11 @@ class DownloadManager:
             "//form[position()>last()-3]//input[@type='submit']")
         
         if bottom_buttons:
-            self.logger.log_button_detection(7, True, "Bottom area search")
             print(f"✅ Found {len(bottom_buttons)} button(s) in bottom area, checking text...")
             for button in bottom_buttons:
                 button_text = button.text.lower() if hasattr(button, 'text') else button.get_attribute('value', '').lower()
                 if 'download' in button_text:
+                    self.logger.log_button_detection(7, True, "Bottom area search")
                     print(f"✅ Found bottom button with download text: {button.text}")
                     return button
         self.logger.log_button_detection(7, False)
@@ -497,12 +497,12 @@ class DownloadManager:
             "//*[contains(text(), 'Download') and (@href or @onclick or name()='button' or name()='input')]")
         
         if all_download_elements:
-            self.logger.log_button_detection(8, True, "Generic interactive Download search")
             print(f"✅ Found {len(all_download_elements)} download element(s) on page")
             # Filter for interactive elements that are likely buttons
             for element in all_download_elements:
                 tag_name = element.tag_name.lower()
                 if tag_name in ['button', 'a', 'input']:
+                    self.logger.log_button_detection(8, True, "Generic interactive Download search")
                     element_text = element.text or element.get_attribute('value') or ''
                     print(f"✅ Found interactive download element: {tag_name} - '{element_text}'")
                     return element
